@@ -7,4 +7,5 @@ outputs = []
 
 def process_message(data):
     if data['type'] == 'message':
-        outputs.append([data['channel'], data['text']])
+        if data['text'].startswith('&gt;'):
+            outputs.append([data['channel'], data['text']])
