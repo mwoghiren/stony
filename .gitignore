@@ -1,5 +1,5 @@
 *.pyc
-/rtmbot.conf
+/stony.conf
 /plugins/**
 /build/**
 *.log
