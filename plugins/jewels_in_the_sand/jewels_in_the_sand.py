@@ -1,4 +1,13 @@
+###
+# Imports
+###
+
 from __future__ import unicode_literals
+
+
+###
+# Global Variables
+###
 
 # A list of outputs; append to this list to send a message.
 outputs = []
@@ -6,6 +15,19 @@ outputs = []
 # Lists of jewels and sand for the current game.
 jewel_list = []
 sand_list = []
+
+
+###
+# Bot Utility Functions
+###
+
+def send_message(channel, message):
+  outputs.append([channel, message])
+
+
+###
+# Game Functions
+###
 
 def list_jewels_and_sand(channel):
   # Create the message using the jewels and sand.
@@ -17,7 +39,7 @@ def list_jewels_and_sand(channel):
   message += ', '.join(sand_list)
 
   # Send the message!
-  outputs.append([channel, message])
+  send_message(channel, message)
 
 def add_jewel(jewel, channel):
   # Add the given jewel to the list of jewels.
@@ -25,7 +47,7 @@ def add_jewel(jewel, channel):
 
   # Let everyone know.
   message = '*\'' + jewel + '\'* is a jewel.'
-  outputs.append([channel, message])
+  send_message(channel, message)
 
 def add_sand(sand, channel):
   # Add the given sand to the list of sand.
@@ -33,24 +55,38 @@ def add_sand(sand, channel):
 
   # Let everyone know.
   message = '*\'' + sand + '\'* is sand.'
-  outputs.append([channel, message])
+  send_message(channel, message)
 
 def restart_game(channel):
+  # Specify the global jewel and sand lists.
+  global jewel_list
+  global sand_list
+
   # Clear the jewel and sand lists.
   jewel_list = []
   sand_list = []
 
   # Let everyone know.
   message = 'The game has been restarted.'
-  outputs.append([channel, message])
+  send_message(channel, message)
+
+
+###
+# Error Handling Functions
+###
 
 def handle_missing_params(command, channel):
   message = 'I need more parameters for the command *\'' + command + '\'*.'
-  outputs.append([channel, message])
+  send_message(channel, message)
 
 def handle_unknown_command(command, channel):
   message = 'I do not understand the command *\'' + command + '\'*.'
-  outputs.append([channel, message])
+  send_message(channel, message)
+
+
+###
+# Bot Main Functions
+###
 
 # This function is called whenever a message is received.
 def process_message(data):
