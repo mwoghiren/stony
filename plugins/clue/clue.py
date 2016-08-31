@@ -6,6 +6,4 @@ outputs = []
 
 
 def process_message(data):
-    outputs.append([data['channel'], "from repeat1 \"{}\" in channel {}".format(
-        data['text'], data['channel'])]
-    )
+    outputs.append([data['channel'], data['text']])
