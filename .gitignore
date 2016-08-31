@@ -1,6 +1,5 @@
 *.pyc
 /stony.conf
-/plugins/**
 /build/**
 *.log
 env
