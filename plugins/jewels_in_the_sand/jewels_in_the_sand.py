@@ -16,6 +16,10 @@ def process_message(data):
   if not message_text.startswith('jits'):
     return
 
-  # Get the channel and make your presence known!
+  # Retrieve the command.
+  message_tokens = message_text.split()
+  command = message_tokens[1]
+
+  # Execute the command!
   channel = data['channel']
-  outputs.append([channel, 'Jewels in the Sand is fun!'])
+  outputs.append([channel, 'I do not understand the command \'' + command + '\'.'])
