@@ -6,4 +6,5 @@ outputs = []
 
 
 def process_message(data):
-    outputs.append([data['channel'], data['text']])
+    if data['type'] == 'message':
+        outputs.append([data['channel'], data['text']])
