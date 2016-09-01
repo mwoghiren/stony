@@ -115,8 +115,16 @@ def list_jewels_and_sand(channel):
   send_message(channel, message)
 
 def add_jewel(jewel, channel):
+  # Check whether the jewel already exists as sand.
+  if jewel in sand_list:
+    # The word already exists as sand.
+    message = '*\'' + jewel + '\'* is already sand!'
+    send_message(channel, message);
+    return
+
   # Add the given jewel to the list of jewels.
-  jewel_list.append(jewel)
+  if jewel not in jewel_list:
+    jewel_list.append(jewel)
 
   # Let everyone know.
   message = '*\'' + jewel + '\'* is a jewel.'
@@ -126,8 +134,16 @@ def add_jewel(jewel, channel):
   list_jewels_and_sand(channel)
 
 def add_sand(sand, channel):
+  # Check whether the sand already exists as a jewel.
+  if sand in jewel_list:
+    # The word already exists as a jewel.
+    message = '*\'' + sand + '\'* is already a jewel!'
+    send_message(channel, message);
+    return
+
   # Add the given sand to the list of sand.
-  sand_list.append(sand)
+  if sand not in sand_list:
+    sand_list.append(sand)
 
   # Let everyone know.
   message = '*\'' + sand + '\'* is sand.'
