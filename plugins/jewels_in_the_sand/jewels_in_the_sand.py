@@ -6,6 +6,15 @@ from __future__ import unicode_literals
 
 
 ###
+# Constants
+###
+
+COMMAND_LIST = 'list'
+COMMAND_ADD_JEWEL = 'jewel'
+COMMAND_ADD_SAND = 'sand'
+COMMAND_RESTART_GAME = 'restart'
+
+###
 # Global Variables
 ###
 
@@ -49,6 +58,9 @@ def add_jewel(jewel, channel):
   message = '*\'' + jewel + '\'* is a jewel.'
   send_message(channel, message)
 
+  # Show the list of jewels and sand.
+  list_jewels_and_sand(channel)
+
 def add_sand(sand, channel):
   # Add the given sand to the list of sand.
   sand_list.append(sand)
@@ -56,6 +68,9 @@ def add_sand(sand, channel):
   # Let everyone know.
   message = '*\'' + sand + '\'* is sand.'
   send_message(channel, message)
+
+  # Show the list of jewels and sand.
+  list_jewels_and_sand(channel)
 
 def restart_game(channel):
   # Specify the global jewel and sand lists.
@@ -105,21 +120,21 @@ def process_message(data):
   command = message_tokens[1]
 
   # Execute the command!
-  if command == 'list':
+  if command == COMMAND_LIST:
     list_jewels_and_sand(channel)
-  elif command == 'jewel':
+  elif command == COMMAND_ADD_JEWEL:
     if len(message_tokens) < 3:
       handle_missing_params(command, channel)
     else:
       jewel = " ".join(message_tokens[2:])
       add_jewel(jewel, channel)
-  elif command == 'sand':
+  elif command == COMMAND_ADD_SAND:
     if len(message_tokens) < 3:
       handle_missing_params(command, channel)
     else:
       sand = " ".join(message_tokens[2:])
       add_sand(sand, channel)
-  elif command == 'restart':
+  elif command == COMMAND_RESTART_GAME:
     restart_game(channel)
   else:
     # We don't understand the command, so we say so.
