@@ -53,7 +53,7 @@ current_is_sultaness = False
 ###
 
 def send_message(channel, message):
-  outputs.append([channel, message])
+  outputs.append([channel, '>>>' + message])
 
 def get_id_for_username(username):
   api_call = slack_client.api_call('users.list')
@@ -70,8 +70,7 @@ def get_id_for_username(username):
 ###
 
 def print_help(channel):
-  message = '>>>'
-  message += '`jits` is the command for Jewels in the Sand.  Run `jits [command]` to do things.\n\n'
+  message = '`jits` is the command for Jewels in the Sand.  Run `jits [command]` to do things.\n\n'
   message += '*General Commands*\n\n'
   message += '`jits [sultan|sultaness] [username]` will specify a new Sultan or Sultaness.\n'
   message += '`jits list` will list the current jewels and sand.\n'
@@ -123,8 +122,7 @@ def get_sultan(channel):
 
 def list_jewels_and_sand(channel):
   # Create the message using the jewels and sand.
-  message = '>>>'
-  message += '*Jewels:* '
+  message = '*Jewels:* '
   message += ', '.join(jewel_list)
   message += '\n'
   message += '*Sand:* '
