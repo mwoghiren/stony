@@ -31,7 +31,7 @@ AVAILABLE_COMMANDS = [COMMAND_HELP, COMMAND_LIST, COMMAND_ADD_JEWEL, COMMAND_ADD
 ###
 
 # The Slack API client.
-config = yaml.load(file('stony-dev-hale.conf', 'r'))
+config = yaml.load(file('stony.conf', 'r'))
 slack_client = SlackClient(config['SLACK_TOKEN'])
 
 # A list of outputs; append to this list to send a message.
