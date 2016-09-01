@@ -176,7 +176,7 @@ def process_message(data):
   message_text = data['text']
 
   # This bot only cares about messages that start with "jits".
-  if not message_text.startswith('jits'):
+  if not message_text.lower().startswith('jits'):
     return
 
   # Retrieve the channel.
