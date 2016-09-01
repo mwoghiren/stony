@@ -3,7 +3,9 @@
 ###
 
 from __future__ import unicode_literals
+from slackclient import SlackClient
 
+import yaml
 
 ###
 # Constants
@@ -13,10 +15,18 @@ COMMAND_LIST = 'list'
 COMMAND_ADD_JEWEL = 'jewel'
 COMMAND_ADD_SAND = 'sand'
 COMMAND_RESTART_GAME = 'restart'
+COMMAND_SULTAN = 'sultan'
+COMMAND_SULTANESS = 'sultaness'
+
+AVAILABLE_COMMANDS = [COMMAND_LIST, COMMAND_ADD_JEWEL, COMMAND_ADD_SAND, COMMAND_RESTART_GAME, COMMAND_SULTAN, COMMAND_SULTANESS]
 
 ###
 # Global Variables
 ###
+
+# The Slack API client.
+config = yaml.load(file('stony-dev-hale.conf', 'r'))
+slack_client = SlackClient(config['SLACK_TOKEN'])
 
 # A list of outputs; append to this list to send a message.
 outputs = []
@@ -25,6 +35,12 @@ outputs = []
 jewel_list = []
 sand_list = []
 
+# The id and username of the current Sultan.
+# Some commands can only be run by the Sultan.
+# TODO: Bundle this into an object.
+current_sultan_id = ''
+current_sultan_name = ''
+current_is_sultaness = False
 
 ###
 # Bot Utility Functions
@@ -33,10 +49,58 @@ sand_list = []
 def send_message(channel, message):
   outputs.append([channel, message])
 
+def get_id_for_username(username):
+  api_call = slack_client.api_call('users.list')
+  if api_call.get('ok'):
+    users = api_call.get('members')
+    for user in users:
+      if 'name' in user and user.get('name') == username:
+        return user.get('id')
+  return ''
+
 
 ###
 # Game Functions
 ###
+
+def set_sultan(channel, new_sultan_name, is_sultaness):
+  # Specify the global Sultan variables.
+  global current_sultan_id
+  global current_sultan_name
+  global current_is_sultaness
+
+  # Get the new Sultan id.
+  new_sultan_id = get_id_for_username(new_sultan_name)
+
+  # Handle the case where the proposed Sultan can't be found.
+  if new_sultan_id == '':
+    handle_invalid_username(new_sultan_name, channel)
+    return
+
+  # Set the new Sultan.
+  current_sultan_id = new_sultan_id
+  current_sultan_name = new_sultan_name
+  current_is_sultaness = is_sultaness
+
+  # Let everyone know.
+  message = 'All hail *' + new_sultan_name + '*, the new Sultan'
+  if is_sultaness:
+    message += 'ess'
+  message += '!'
+  send_message(channel, message)
+
+def get_sultan(channel):
+  if current_sultan_name == '':
+    message = 'There is currently no Sultan or Sultaness.'
+  else:
+    message = 'The current Sultan'
+    if current_is_sultaness:
+      message += 'ess'
+    message += ' is ' + current_sultan_name + '.  Long may '
+    if current_is_sultaness:
+      message += 's'
+    message += 'he live!'
+  send_message(channel, message)
 
 def list_jewels_and_sand(channel):
   # Create the message using the jewels and sand.
@@ -98,6 +162,9 @@ def handle_unknown_command(command, channel):
   message = 'I do not understand the command *\'' + command + '\'*.'
   send_message(channel, message)
 
+def handle_invalid_username(username, channel):
+  message = 'I can\'t find the user *\'' + username + '\'*.'
+  send_message(channel, message)
 
 ###
 # Bot Main Functions
@@ -119,10 +186,36 @@ def process_message(data):
   message_tokens = message_text.split()
   command = message_tokens[1]
 
+  # Check whether we understand the command.
+  if command not in AVAILABLE_COMMANDS:
+    # We don't understand the command, so we say so.
+    handle_unknown_command(command, channel)
+    return
+
   # Execute the command!
+  # First, we check for commands that can be run by anyone.
   if command == COMMAND_LIST:
     list_jewels_and_sand(channel)
-  elif command == COMMAND_ADD_JEWEL:
+  elif command == COMMAND_SULTAN:
+    if len(message_tokens) < 3:
+      get_sultan(channel)
+    else:
+      new_sultan = message_tokens[2]
+      set_sultan(channel, new_sultan, False)
+  elif command == COMMAND_SULTANESS:
+    if len(message_tokens) < 3:
+      get_sultan(channel)
+    else:
+      new_sultan = message_tokens[2]
+      set_sultan(channel, new_sultan, True)
+
+  # Now, we return if the person who sent the message is not the Sultan.
+  message_sender_id = data['user']
+  if message_sender_id != current_sultan_id:
+    return
+
+  # The Sultan has issued a command!  Execute it, if possible.
+  if command == COMMAND_ADD_JEWEL:
     if len(message_tokens) < 3:
       handle_missing_params(command, channel)
     else:
@@ -136,6 +229,3 @@ def process_message(data):
       add_sand(sand, channel)
   elif command == COMMAND_RESTART_GAME:
     restart_game(channel)
-  else:
-    # We don't understand the command, so we say so.
-    handle_unknown_command(command, channel)
