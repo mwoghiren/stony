@@ -14,6 +14,7 @@ import yaml
 TYPE_JEWEL = 'jewel'
 TYPE_SAND = 'sand'
 
+COMMAND_HELP = 'help'
 COMMAND_LIST = 'list'
 COMMAND_ADD_JEWEL = 'jewel'
 COMMAND_ADD_SAND = 'sand'
@@ -23,7 +24,7 @@ COMMAND_RESTART_GAME = 'restart'
 COMMAND_SULTAN = 'sultan'
 COMMAND_SULTANESS = 'sultaness'
 
-AVAILABLE_COMMANDS = [COMMAND_LIST, COMMAND_ADD_JEWEL, COMMAND_ADD_SAND, COMMAND_REMOVE_JEWEL, COMMAND_REMOVE_SAND, COMMAND_RESTART_GAME, COMMAND_SULTAN, COMMAND_SULTANESS]
+AVAILABLE_COMMANDS = [COMMAND_HELP, COMMAND_LIST, COMMAND_ADD_JEWEL, COMMAND_ADD_SAND, COMMAND_REMOVE_JEWEL, COMMAND_REMOVE_SAND, COMMAND_RESTART_GAME, COMMAND_SULTAN, COMMAND_SULTANESS]
 
 ###
 # Global Variables
@@ -67,6 +68,19 @@ def get_id_for_username(username):
 ###
 # Game Functions
 ###
+
+def print_help(channel):
+  message = '>>>'
+  message += '`jits` is the command for Jewels in the Sand.  Run `jits [command]` to do things.\n\n'
+  message += '*General Commands*\n\n'
+  message += '`jits [sultan|sultaness] [username]` will specify a new Sultan or Sultaness.\n'
+  message += '`jits list` will list the current jewels and sand.\n'
+  message += '`jits restart` will restart the game.\n'
+  message += '`jits help` will bring up this message.\n\n'
+  message += '*Sultan Commands*\n\n'
+  message += '`jits [jewel|sand] [word]` will add the given word to the appropriate list.\n'
+  message += '`jits [unjewel|unsand] [word]` will remove the given word from the appropriate list.\n'
+  send_message(channel, message)
 
 def set_sultan(channel, new_sultan_name, is_sultaness):
   # Specify the global Sultan variables.
@@ -270,6 +284,8 @@ def process_message(data):
     else:
       new_sultan = message_tokens[2]
       set_sultan(channel, new_sultan, True)
+  elif command == COMMAND_HELP:
+    print_help(channel)
 
   # Now, we return if the person who sent the message is not the Sultan.
   message_sender_id = data['user']
