@@ -25,6 +25,10 @@ def process_message(data):
     # stony last repeated a clue.
     st.count = st.count + 1
 
+    # Respond to the word "clue" alone as a command and show the clue
+    if data['text'].lower() == "clue":
+        st.count = 0
+
     if re.search("^\s*&gt;", data['text'], re.MULTILINE):
         st.clue = data['text']
         st.count = 1
