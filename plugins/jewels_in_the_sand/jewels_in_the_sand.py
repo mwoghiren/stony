@@ -11,14 +11,19 @@ import yaml
 # Constants
 ###
 
+TYPE_JEWEL = 'jewel'
+TYPE_SAND = 'sand'
+
 COMMAND_LIST = 'list'
 COMMAND_ADD_JEWEL = 'jewel'
 COMMAND_ADD_SAND = 'sand'
+COMMAND_REMOVE_JEWEL = 'unjewel'
+COMMAND_REMOVE_SAND = 'unsand'
 COMMAND_RESTART_GAME = 'restart'
 COMMAND_SULTAN = 'sultan'
 COMMAND_SULTANESS = 'sultaness'
 
-AVAILABLE_COMMANDS = [COMMAND_LIST, COMMAND_ADD_JEWEL, COMMAND_ADD_SAND, COMMAND_RESTART_GAME, COMMAND_SULTAN, COMMAND_SULTANESS]
+AVAILABLE_COMMANDS = [COMMAND_LIST, COMMAND_ADD_JEWEL, COMMAND_ADD_SAND, COMMAND_REMOVE_JEWEL, COMMAND_REMOVE_SAND, COMMAND_RESTART_GAME, COMMAND_SULTAN, COMMAND_SULTANESS]
 
 ###
 # Global Variables
@@ -114,43 +119,84 @@ def list_jewels_and_sand(channel):
   # Send the message!
   send_message(channel, message)
 
-def add_jewel(jewel, channel):
-  # Check whether the jewel already exists as sand.
-  if jewel in sand_list:
-    # The word already exists as sand.
-    message = '*\'' + jewel + '\'* is already sand!'
+def add_word(word, type, channel):
+  # Grab the appropriate list.
+  if type == TYPE_JEWEL:
+    list = jewel_list
+    other_list = sand_list
+  elif type == TYPE_SAND:
+    list = sand_list
+    other_list = jewel_list
+  else:
+    return
+
+  # Check whether the word already exists in the other list.
+  if word in other_list:
+    # The word already exists in the other list.
+    message = '*\'' + word + '\'* is already '
+    if type == TYPE_SAND:
+      message += 'a ' + TYPE_JEWEL
+    elif type == TYPE_JEWEL:
+      message += TYPE_SAND
+    else:
+      return
+    message += '!'
     send_message(channel, message);
     return
 
-  # Add the given jewel to the list of jewels.
-  if jewel not in jewel_list:
-    jewel_list.append(jewel)
+  # Add the given word to the given list.
+  if word not in list:
+    list.append(word)
 
   # Let everyone know.
-  message = '*\'' + jewel + '\'* is a jewel.'
+  message = '*\'' + word + '\'* is '
+  if type == TYPE_JEWEL:
+    message += 'a '
+  message += type + '.'
   send_message(channel, message)
 
   # Show the list of jewels and sand.
   list_jewels_and_sand(channel)
+
+def add_jewel(jewel, channel):
+  add_word(jewel, TYPE_JEWEL, channel)
 
 def add_sand(sand, channel):
-  # Check whether the sand already exists as a jewel.
-  if sand in jewel_list:
-    # The word already exists as a jewel.
-    message = '*\'' + sand + '\'* is already a jewel!'
-    send_message(channel, message);
+  add_word(sand, TYPE_SAND, channel)
+
+def remove_word(word, type, channel):
+  # Grab the appropriate list.
+  if type == TYPE_JEWEL:
+    list = jewel_list
+  elif type == TYPE_SAND:
+    list = sand_list
+  else:
     return
 
-  # Add the given sand to the list of sand.
-  if sand not in sand_list:
-    sand_list.append(sand)
+  # Ensure the word is in the list.
+  if word not in list:
+    message = '*\'' + word + '\'* is not specified as '
+    if type == TYPE_JEWEL:
+      message += 'a '
+    message += type + '.'
+    send_message(channel, message)
+    return
 
-  # Let everyone know.
-  message = '*\'' + sand + '\'* is sand.'
+  list.remove(word)
+  message = '*\'' + word + '\'* removed from the list of ' + type
+  if type == TYPE_JEWEL:
+    message += 's'
+  message += '.'
   send_message(channel, message)
 
   # Show the list of jewels and sand.
   list_jewels_and_sand(channel)
+
+def remove_jewel(jewel, channel):
+  remove_word(jewel, TYPE_JEWEL, channel)
+
+def remove_sand(sand, channel):
+  remove_word(sand, TYPE_SAND, channel)
 
 def restart_game(channel):
   # Specify the global jewel and sand lists.
@@ -243,5 +289,17 @@ def process_message(data):
     else:
       sand = " ".join(message_tokens[2:])
       add_sand(sand, channel)
+  elif command == COMMAND_REMOVE_JEWEL:
+    if len(message_tokens) < 3:
+      handle_missing_params(command, channel)
+    else:
+      jewel = " ".join(message_tokens[2:])
+      remove_jewel(jewel, channel)
+  elif command == COMMAND_REMOVE_SAND:
+    if len(message_tokens) < 3:
+      handle_missing_params(command, channel)
+    else:
+      sand = " ".join(message_tokens[2:])
+      remove_sand(sand, channel)
   elif command == COMMAND_RESTART_GAME:
     restart_game(channel)
