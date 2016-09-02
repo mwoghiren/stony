@@ -14,17 +14,18 @@ import yaml
 TYPE_JEWEL = 'jewel'
 TYPE_SAND = 'sand'
 
-COMMAND_HELP = 'help'
-COMMAND_LIST = 'list'
+COMMAND_ADD_GUESS = 'guess'
 COMMAND_ADD_JEWEL = 'jewel'
 COMMAND_ADD_SAND = 'sand'
+COMMAND_HELP = 'help'
+COMMAND_LIST = 'list'
 COMMAND_REMOVE_JEWEL = 'unjewel'
 COMMAND_REMOVE_SAND = 'unsand'
 COMMAND_RESTART_GAME = 'restart'
 COMMAND_SULTAN = 'sultan'
 COMMAND_SULTANESS = 'sultaness'
 
-AVAILABLE_COMMANDS = [COMMAND_HELP, COMMAND_LIST, COMMAND_ADD_JEWEL, COMMAND_ADD_SAND, COMMAND_REMOVE_JEWEL, COMMAND_REMOVE_SAND, COMMAND_RESTART_GAME, COMMAND_SULTAN, COMMAND_SULTANESS]
+AVAILABLE_COMMANDS = [COMMAND_ADD_GUESS, COMMAND_ADD_JEWEL, COMMAND_ADD_SAND, COMMAND_HELP, COMMAND_LIST, COMMAND_REMOVE_JEWEL, COMMAND_REMOVE_SAND, COMMAND_RESTART_GAME, COMMAND_SULTAN, COMMAND_SULTANESS]
 
 ###
 # Global Variables
@@ -40,6 +41,9 @@ outputs = []
 # Lists of jewels and sand for the current game.
 jewel_list = []
 sand_list = []
+
+# A list of outstanding guesses.
+guess_list = []
 
 # The id and username of the current Sultan.
 # Some commands can only be run by the Sultan.
@@ -127,6 +131,10 @@ def list_jewels_and_sand(channel):
   message += '\n'
   message += '*Sand:* '
   message += ', '.join(sand_list)
+  if len(guess_list) > 0:
+    message += '\n'
+    message += '*Outstanding Guesses:* '
+    message += ', '.join(guess_list)
 
   # Send the message!
   send_message(channel, message)
@@ -159,6 +167,9 @@ def add_word(word, type, channel):
   # Add the given word to the given list.
   if word not in list:
     list.append(word)
+
+  # Remove the word form the guess list, if it's there.
+  guess_list.remove(word)
 
   # Let everyone know.
   message = '*\'' + word + '\'* is '
@@ -210,14 +221,38 @@ def remove_jewel(jewel, channel):
 def remove_sand(sand, channel):
   remove_word(sand, TYPE_SAND, channel)
 
+def register_guess(guess, channel):
+  # Check if the guess already exists in the jewel, sand, or guess lists.
+  message = ''
+  if guess in jewel_list:
+    message = '*\'' + guess + '\'* is a jewel.'
+  elif guess in sand_list:
+    message = '*\'' + guess + '\'* is sand.'
+  elif guess in guess_list:
+    message = '*\'' + guess + '\'* is already a pending guess.'
+
+  if message != '':
+    send_message(channel, message)
+    return
+
+  # We have a new guess!  Add it to the list.
+  guess_list.append(guess)
+
+  # Let everyone know.
+  message = 'The guess *\'' + guess + '\'* is now registered.\n'
+  message += '*Outstanding Guesses:* ' + ', '.join(guess_list)
+  send_message(channel, message)
+
 def restart_game(channel):
   # Specify the global jewel and sand lists.
   global jewel_list
   global sand_list
+  global guess_list
 
-  # Clear the jewel and sand lists.
+  # Clear the jewel, sand, and guess lists.
   jewel_list = []
   sand_list = []
+  guess_list = []
 
   # Let everyone know.
   message = 'The game has been restarted.'
@@ -282,6 +317,12 @@ def process_message(data):
     else:
       new_sultan = message_tokens[2]
       set_sultan(channel, new_sultan, True)
+  elif command == COMMAND_ADD_GUESS:
+    if len(message_tokens) < 3:
+      handle_missing_params(command, channel)
+    else:
+      guess = " ".join(message_tokens[2:])
+      register_guess(guess, channel)
   elif command == COMMAND_HELP:
     print_help(channel)
 
