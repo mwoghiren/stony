@@ -91,7 +91,7 @@ def get_id_for_username(username):
     return ''
 
 def get_im_id_for_user_id(user_id):
-    api_call = slack_client.api_call('im.open')
+    api_call = slack_client.api_call('im.open', user=user_id)
     if api_call.get('ok'):
         return api_call.get('channel').get('id')
     return ''
@@ -151,6 +151,7 @@ def prepare_players():
         question_list.append([])
 
 def start_game(channel):
+    global game_channel
     if len(player_list) < MINIMUM_PLAYER_COUNT:
         message = 'Cannot start game; we have '
         message += str(len(player_list)) + '/' + str(MINIMUM_PLAYER_COUNT) + ' players.'
@@ -162,6 +163,7 @@ def start_game(channel):
     start_first_round()
     
 def start_first_round():
+    global current_round, words_received
     current_round = 1
     words_received = 0
     message = 'Please enter the answer to your trivia question.'
@@ -169,43 +171,46 @@ def start_first_round():
         send_message(message, player.im_id)
 
 def start_next_round():
+    global current_round, words_received
     current_round += 1
     words_received = 0
     for player in player_list:
         answer_index = (player.index + current_round - 1) % len(player_list)
         message = 'The answer to this trivia question is *\'' + answer_list[answer_index] + '\'*.\n'
-        message += 'The previous word in this question is *\'' + question_list[answer_index][current_round * 2] + '\'*.\n'
+        message += 'The previous word in this question is *\'' + question_list[answer_index][(current_round - 1) * 2] + '\'*.\n'
         message += 'Please enter the '
         message += 'next two words ' if current_round < NUMBER_OF_ROUNDS else 'final word '
         message += 'of this trivia question.'
         send_message(message, player.im_id)
 
 def add_question_words(words, player):
+    global words_received
     # Validate based on the current round.
     expected_word_count = 3 if current_round == 1 else 1 if current_round == NUMBER_OF_ROUNDS else 2
-    if len(message_tokens) == expected_word_count:
-        question_index = (player_index + round_number - 1) % len(player_list)
-        question_list[question_index].append(message_tokens)
+    if len(words) == expected_word_count:
+        question_index = (player.index + current_round - 1) % len(player_list)
+        question_list[question_index].extend(words)
         words_received += 1
         message = 'Thanks!  Please wait for the next round.'
     else:
         message = 'Please enter exactly '
         message += 'three words.' if expected_word_count == 3 else 'one word.' if expected_word_count == 1 else 'two words.'
-    player = get_player_for_player_id(message_sender_id)
     send_message(message, player.im_id)
 
 def start_trivia_round():
+    global presentation_index
     presentation_index = -1
     message = '*Time for the trivia round!*  Type `xfruit go` to present the first question.'
     send_message(message, game_channel)
 
 def continue_trivia_round():
+    global question_is_presented, presentation_index
     game_is_over = False
     if not question_is_presented:
         question_is_presented = True
         presentation_index += 1
-        message = 'This question is for *' + player_list[presentation_index] + '*:\n'
-        message += '    ' + question_list[(presentation_index - 1) % len(player_list)]
+        message = 'This question is for *' + player_list[presentation_index].name + '*:\n'
+        message += '    ' + ' '.join(question_list[(presentation_index - 1) % len(player_list)])
         if not message.endswith('?'):
             message += '?'
     else:
@@ -306,7 +311,7 @@ def process_message(data):
     # If this isn't in the sender's IM channel, ignore it.
     if channel != active_player.im_id:
         return
-        
+
     if answer_list[active_player.index] == '':
         # The player is giving us their answer.
         answer_list[active_player.index] = message_text
@@ -315,8 +320,11 @@ def process_message(data):
         message = 'Please enter the first three words of your trivia question.'
         send_message(message, active_player.im_id)
     else:
-        if len(question_list[active_player.index]) > (current_round * 2) - 1:
+        question_index = (active_player.index + current_round - 1) % len(player_list)
+        if len(question_list[question_index]) > (current_round * 2) - 1:
             # We already have this player's input for the round!
+            message = 'Please wait for the next round.'
+            send_message(message, active_player.im_id)
             return
 
         # The player is adding to the appropriate question.
