@@ -190,7 +190,7 @@ def start_next_round():
             message += 'Please enter the *first three words* of this trivia question.'
         elif current_round < number_of_rounds:
             message += 'The previous word in this question is *\'' + question_list[answer_index][(current_round - 1) * 2] + '\'*.\n'
-            message += 'Please enter the next two words of this trivia question.\n'
+            message += 'Please enter the *next two words* of this trivia question.\n'
             message += '(These are the *' + str(current_round * 2) + 'th and ' + str((current_round * 2) + 1) + 'th* words out of *' + str(number_of_rounds * 2) + '*.)'
         else:
             message += 'The previous word in this question is *\'' + question_list[answer_index][(current_round - 1) * 2] + '\'*.\n'
