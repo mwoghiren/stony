@@ -13,7 +13,7 @@ import yaml
 ###
 
 NUMBER_OF_ROUNDS = 7
-MINIMUM_PLAYER_COUNT = NUMBER_OF_ROUNDS + 1
+MINIMUM_PLAYER_COUNT = NUMBER_OF_ROUNDS + 2
 
 
 ###
@@ -40,7 +40,7 @@ game_channel = ''
 player_list = []
 
 # The current round.
-current_round = 0
+current_round = -1
 
 # The trivia answers.
 answer_list = []
@@ -166,11 +166,11 @@ def start_game(channel):
 
     prepare_players()
     game_channel = channel
-    start_first_round()
+    gather_answers()
 
-def start_first_round():
+def gather_answers():
     global current_round, words_received
-    current_round = 1
+    current_round = 0
     words_received = 0
     message = 'Please enter the answer to your trivia question.'
     for player in player_list:
@@ -181,13 +181,16 @@ def start_next_round():
     current_round += 1
     words_received = 0
     for player in player_list:
-        answer_index = (player.index + current_round - 1) % len(player_list)
+        answer_index = (player.index + current_round) % len(player_list)
         message = 'The answer to this trivia question is *\'' + answer_list[answer_index] + '\'*.\n'
-        message += 'The previous word in this question is *\'' + question_list[answer_index][(current_round - 1) * 2] + '\'*.\n'
-        if current_round < NUMBER_OF_ROUNDS:
+        if current_round == 1:
+            message += 'Please enter the *first three words* of this trivia question.'
+        elif current_round < NUMBER_OF_ROUNDS:
+            message += 'The previous word in this question is *\'' + question_list[answer_index][(current_round - 1) * 2] + '\'*.\n'
             message += 'Please enter the next two words of this trivia question.\n'
             message += '(These are the *' + str(current_round * 2) + 'th and ' + str((current_round * 2) + 1) + 'th* words out of *' + str(NUMBER_OF_ROUNDS * 2) + '*.)'
         else:
+            message += 'The previous word in this question is *\'' + question_list[answer_index][(current_round - 1) * 2] + '\'*.\n'
             message += 'Please enter the *' + str(NUMBER_OF_ROUNDS * 2) + 'th and final word* of this trivia question.'
         send_message(message, player.im_id)
 
@@ -196,7 +199,7 @@ def add_question_words(words, player):
     # Validate based on the current round.
     expected_word_count = 3 if current_round == 1 else 1 if current_round == NUMBER_OF_ROUNDS else 2
     if len(words) == expected_word_count:
-        question_index = (player.index + current_round - 1) % len(player_list)
+        question_index = (player.index + current_round) % len(player_list)
         question_list[question_index].extend(words)
         words_received += 1
         message = 'Thanks!  Please wait for the ' + ('next' if current_round < NUMBER_OF_ROUNDS else 'trivia') + ' round.'
@@ -204,6 +207,13 @@ def add_question_words(words, player):
         message = 'Please enter exactly '
         message += 'three words.' if expected_word_count == 3 else 'one word.' if expected_word_count == 1 else 'two words.'
     send_message(message, player.im_id)
+
+def check_for_next_round():
+    if words_received == len(player_list):
+        if current_round < NUMBER_OF_ROUNDS:
+            start_next_round()
+        else:
+            start_trivia_round()
 
 def start_trivia_round():
     global presentation_index
@@ -242,7 +252,7 @@ def continue_trivia_round():
 def end_game():
     global current_round, words_received, presentation_index
     global player_list, question_list, answer_list, game_channel
-    current_round = 0
+    current_round = -1
     words_received = 0
     presentation_index = -2
     player_list = []
@@ -274,6 +284,7 @@ def handle_invalid_player_name(player_name, channel):
 # Not a huge deal right now, since we'll roughly be dealing with eight players.
 
 def process_message(data):
+    global words_received
     message_text = data['text']
     message_tokens = message_text.split()
     channel = data['channel']
@@ -328,23 +339,20 @@ def process_message(data):
     if answer_list[active_player.index] == '':
         # The player is giving us their answer.
         answer_list[active_player.index] = message_text
-
-        # Now we ask for their first three words.
-        message = 'Please enter the first three words of your trivia question.\n'
-        message += '(These questions will be *' + str(NUMBER_OF_ROUNDS * 2) + '* words long.)'
+        words_received += 1
+        message = 'Thanks!  Please wait for the next round.'
         send_message(message, active_player.im_id)
     else:
-        question_index = (active_player.index + current_round - 1) % len(player_list)
+        # The player is adding to the question.
+        question_index = (active_player.index + current_round) % len(player_list)
         if len(question_list[question_index]) > (current_round * 2) - 1:
             # We already have this player's input for the round!
             message = 'Please wait for the ' + ('next' if current_round < NUMBER_OF_ROUNDS else 'trivia') + ' round.'
             send_message(message, active_player.im_id)
             return
 
-        # The player is adding to the appropriate question.
+        # Accept the given words.
         add_question_words(message_tokens, active_player)
-        if words_received == len(player_list):
-            if current_round < NUMBER_OF_ROUNDS:
-                start_next_round()
-            else:
-                start_trivia_round()
+
+    # Check for round advancement.
+    check_for_next_round()
