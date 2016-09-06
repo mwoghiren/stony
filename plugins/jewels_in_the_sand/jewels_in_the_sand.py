@@ -312,9 +312,16 @@ ALIASES = {
     # word? -> jits guess word
     r'^([^\s]+)\s*\?': r'jits guess \1',
 
+    # "some phrase"? -> jits guess some phrase
+    r'^"([^"]+)"\s*\?': r'jits guess \1',
+
     # word=jewel -> jits jewel word
     # word=sand -> jits sand word
     r'^([^\s]+)\s*=\s*(jewel|sand)': r'jits \2 \1',
+
+    # "some phrase"=jewel -> jits jewel some phrase
+    # "some phrase"=sand -> jits sand some phrase
+    r'^"([^"]+)"\s*=\s*(jewel|sand)': r'jits \2 \1',
 }
 
 # Convert any aliases into their command equivalent
