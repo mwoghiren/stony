@@ -14,19 +14,6 @@ import yaml
 TYPE_JEWEL = 'jewel'
 TYPE_SAND = 'sand'
 
-COMMAND_ADD_GUESS = 'guess'
-COMMAND_ADD_JEWEL = 'jewel'
-COMMAND_ADD_SAND = 'sand'
-COMMAND_HELP = 'help'
-COMMAND_LIST = 'list'
-COMMAND_REMOVE_JEWEL = 'unjewel'
-COMMAND_REMOVE_SAND = 'unsand'
-COMMAND_RESTART_GAME = 'restart'
-COMMAND_SULTAN = 'sultan'
-COMMAND_SULTANESS = 'sultaness'
-
-AVAILABLE_COMMANDS = [COMMAND_ADD_GUESS, COMMAND_ADD_JEWEL, COMMAND_ADD_SAND, COMMAND_HELP, COMMAND_LIST, COMMAND_REMOVE_JEWEL, COMMAND_REMOVE_SAND, COMMAND_RESTART_GAME, COMMAND_SULTAN, COMMAND_SULTANESS]
-
 ###
 # Global Variables
 ###
@@ -278,6 +265,45 @@ def handle_invalid_username(channel, username):
     send_message(channel, message)
 
 ###
+# Available commands for this bot
+###
+
+class Command:
+
+    def __init__(self, name, function, num_args=0,
+                 collapse_args=False,requires_sultan=False,
+                 extra_args={}):
+        self.name = name
+        self.function = function
+        self.num_args = num_args
+        self.collapse_args = collapse_args
+        self.requires_sultan = requires_sultan
+        self.extra_args = extra_args
+
+AVAILABLE_COMMANDS = [
+  Command('help', print_help),
+  Command('list', list_jewels_and_sand),
+  Command('guess', register_guess,
+          num_args=1, collapse_args=True),
+  Command('jewel', add_jewel,
+          num_args=1, collapse_args=True, requires_sultan=True),
+  Command('sand', add_sand,
+          num_args=1, collapse_args=True, requires_sultan=True),
+  Command('unjewel', remove_jewel,
+          num_args=1, collapse_args=True, requires_sultan=True),
+  Command('unsand', remove_sand,
+          num_args=1, collapse_args=True, requires_sultan=True),
+  Command('restart', restart_game,
+          requires_sultan=True),
+  Command('sultan', get_sultan, num_args=0),
+  Command('sultan', set_sultan, num_args=1,
+          extra_args={"is_sultaness": False}),
+  Command('sultaness', get_sultan, num_args=0),
+  Command('sultaness', set_sultan, num_args=1,
+          extra_args={"is_sultaness": True}),
+]
+
+###
 # Bot Main Functions
 ###
 
@@ -293,70 +319,44 @@ def process_message(data):
     # Retrieve the channel.
     channel = data['channel']
 
+    # Retrieve the sender
+    message_sender_id = data['user']
+
     # Retrieve the command.
     message_tokens = message_text.split()
     command = message_tokens[1]
+    args = message_tokens[2:]
 
-    # Check whether we understand the command.
-    if command not in AVAILABLE_COMMANDS:
-        # We don't understand the command, so we say so.
+    # Find the command
+    cmd = None
+    for c in AVAILABLE_COMMANDS:
+        if c.name == command:
+            # Some commands appear in the list twice with different numbers
+            # of arguments. A command with a matching number of arguments takes
+            # precendence over a command with a mis-match.
+            if not cmd or len(args) == c.num_args:
+                cmd = c
+
+    # Report for unknown commands
+    if not cmd:
         handle_unknown_command(channel, command)
         return
 
-    # Execute the command!
-    # First, we check for commands that can be run by anyone.
-    if command == COMMAND_LIST:
-        list_jewels_and_sand(channel)
-    elif command == COMMAND_SULTAN:
-        if len(message_tokens) < 3:
-            get_sultan(channel)
-        else:
-            new_sultan = message_tokens[2]
-            set_sultan(channel, new_sultan, False)
-    elif command == COMMAND_SULTANESS:
-        if len(message_tokens) < 3:
-            get_sultan(channel)
-        else:
-            new_sultan = message_tokens[2]
-            set_sultan(channel, new_sultan, True)
-    elif command == COMMAND_ADD_GUESS:
-        if len(message_tokens) < 3:
-            handle_missing_params(channel, command)
-        else:
-            guess = " ".join(message_tokens[2:])
-            register_guess(guess, channel)
-    elif command == COMMAND_HELP:
-        print_help(channel)
+    # Collapse arguments if the command needs that
+    if cmd.collapse_args:
+        args = [" ".join(args)]
 
-    # Now, we return if the person who sent the message is not the Sultan.
-    message_sender_id = data['user']
-    if message_sender_id != current_sultan_id:
+    # Ensure we received the required number of arguments
+    if len(args) != cmd.num_args:
+        handle_missing_params(channel, command)
+
+    # Do nothing if a non-Sultan attempt a Sultan-only command
+    if cmd.requires_sultan and message_sender_id != current_sultan_id:
+        send_message(channel, "Sorry {} is not the sultan ({})".format(message_sender_id, current_sultan_in))
         return
 
-    # The Sultan has issued a command!  Execute it, if possible.
-    if command == COMMAND_ADD_JEWEL:
-        if len(message_tokens) < 3:
-            handle_missing_params(channel, command)
-        else:
-            jewel = " ".join(message_tokens[2:])
-            add_jewel(channel, jewel)
-    elif command == COMMAND_ADD_SAND:
-        if len(message_tokens) < 3:
-            handle_missing_params(channel, command)
-        else:
-            sand = " ".join(message_tokens[2:])
-            add_sand(channel, sand)
-    elif command == COMMAND_REMOVE_JEWEL:
-        if len(message_tokens) < 3:
-            handle_missing_params(channel, command)
-        else:
-            jewel = " ".join(message_tokens[2:])
-            remove_jewel(channel, jewel)
-    elif command == COMMAND_REMOVE_SAND:
-        if len(message_tokens) < 3:
-            handle_missing_params(channel, command)
-        else:
-            sand = " ".join(message_tokens[2:])
-            remove_sand(channel, sand)
-    elif command == COMMAND_RESTART_GAME:
-        restart_game(channel)
+    # Execute the command!
+    if cmd.num_args == 0:
+        cmd.function(channel)
+    else:
+        cmd.function(channel, *args, **cmd.extra_args)
