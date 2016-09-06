@@ -159,7 +159,8 @@ def add_word(channel, word, type):
         list.append(word)
 
     # Remove the word form the guess list, if it's there.
-    guess_list.remove(word)
+    if word in guess_list:
+        guess_list.remove(word)
 
     # Let everyone know.
     message = '*\'' + word + '\'* is '
