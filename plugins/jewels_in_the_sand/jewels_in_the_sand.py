@@ -6,6 +6,7 @@ from __future__ import unicode_literals
 from slackclient import SlackClient
 
 import yaml
+import re
 
 ###
 # Constants
@@ -304,6 +305,27 @@ AVAILABLE_COMMANDS = [
 ]
 
 ###
+# Support for command aliases
+###
+
+ALIASES = {
+    # word? -> jits guess word
+    r'^([^\s]+)\s*\?': r'jits guess \1',
+
+    # word=jewel -> jits jewel word
+    # word=sand -> jits sand word
+    r'^([^\s]+)\s*=\s*(jewel|sand)': r'jits \2 \1',
+}
+
+# Convert any aliases into their command equivalent
+def process_aliases(msg):
+
+    for key, value in ALIASES.iteritems():
+        msg = re.sub(key, value, msg)
+
+    return msg
+
+###
 # Bot Main Functions
 ###
 
@@ -311,6 +333,8 @@ AVAILABLE_COMMANDS = [
 def process_message(data):
     # Get the text.
     message_text = data['text']
+
+    message_text = process_aliases(message_text)
 
     # This bot only cares about messages that start with "jits".
     if not message_text.lower().startswith('jits'):
