@@ -143,7 +143,9 @@ def start_game(channel, player, new_partner_name):
     send_message(channel, message)
 
     user_id_to_game[new_partner.id] = new_game
+    player.current_word = None
     message = 'You\'re now in a game of _One, Two, Three_ with *' + player.name + '*.\n'
+    new_partner.current_word = None
     message += 'Please enter a starting word using `123 word [your_word]`.'
     send_message(new_partner.im_id, message)
 
