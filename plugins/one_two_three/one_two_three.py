@@ -97,6 +97,14 @@ def get_username_for_id(user_id):
         return api_call.get('user').get('name')
     return None
 
+def get_id_for_channel_name(channel_name):
+    api_call = slack_client.api_call('channels.list')
+    if api_call.get('ok'):
+        channels = api_call.get('channels')
+        for channel in channels:
+            if 'name' in channel and channel.get('name') == channel_name:
+                return channel.get('id')
+    return None
 
 ###
 # Bot Helper Functions
@@ -135,7 +143,9 @@ def start_game(channel, player, new_partner_name):
         send_message(channel, message)
         return
 
+    player.current_word = None
     new_partner = get_player_for_user_id(new_partner_id)
+    new_partner.current_word = None
     new_game = Game([player, new_partner])
     user_id_to_game[player.id] = new_game
     message = 'You\'re now in a game of _One, Two, Three_ with *' + new_partner_name + '*.\n'
@@ -143,9 +153,7 @@ def start_game(channel, player, new_partner_name):
     send_message(channel, message)
 
     user_id_to_game[new_partner.id] = new_game
-    player.current_word = None
     message = 'You\'re now in a game of _One, Two, Three_ with *' + player.name + '*.\n'
-    new_partner.current_word = None
     message += 'Please enter a starting word using `123 word [your_word]`.'
     send_message(new_partner.im_id, message)
 
@@ -179,6 +187,7 @@ def start_next_round(channel, game):
             message = 'Congratulations!  You and ' + partner.name + ' both guessed *\'' + player.current_word + '\'* after ' + str(game.current_round) + ' round' + ('' if game.current_round == 1 else 's') + '.  Nicely done!'
             send_message(player.im_id, message)
             user_id_to_game[player.id] = None
+        report_results(channel, game)
         return
 
     game.current_round += 1
@@ -190,6 +199,16 @@ def start_next_round(channel, game):
 
     for player in game.players:
         player.current_word = None
+
+def report_results(channel, game):
+    message = 'This just in!  ' + game.players[0].name + ' and ' + game.players[1].name + ' just completed a game in *' + game.current_round + ' round' + ('' if game.current_round == 1 else 's') + '.*\n'
+    message += 'Here\'s the word path:\n'
+    message += '*'
+    for index in xrange(0, len(game.words[game.players[0]])):
+        message += '[' + game.words[game.players[0]] + ', ' + game.words[game.players[1]] + '], '
+    message = message[0:-2]
+    out_channel = get_id_for_channel_name('one_two_three')
+    send_message(out_channel, message)
 
 def quit_game(channel, player):
     existing_game = user_id_to_game.get(player.id)
