@@ -129,6 +129,12 @@ def start_game(channel, player, new_partner_name):
         return
 
     new_partner_id = get_id_for_username(new_partner_name)
+    new_partner_existing_game = user_id_to_game.get(new_partner_id)
+    if new_partner_existing_game != None:
+        message = 'Oops!  ' + new_partner_name + ' is already in a game.'
+        send_message(channel, message)
+        return
+
     new_partner = get_player_for_user_id(new_partner_id)
     new_game = Game([player, new_partner])
     user_id_to_game[player.id] = new_game
