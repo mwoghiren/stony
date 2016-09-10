@@ -201,12 +201,11 @@ def start_next_round(channel, game):
         player.current_word = None
 
 def report_results(channel, game):
-    message = 'This just in!  ' + game.players[0].name + ' and ' + game.players[1].name + ' just completed a game in *' + game.current_round + ' round' + ('' if game.current_round == 1 else 's') + '.*\n'
-    message += 'Here\'s the word path:\n'
-    message += '*'
-    for index in xrange(0, len(game.words[game.players[0]])):
-        message += '[' + game.words[game.players[0]] + ', ' + game.words[game.players[1]] + '], '
-    message = message[0:-2]
+    message = '*This just in!*  ' + game.players[0].name + ' and ' + game.players[1].name + ' just completed a game in *' + str(game.current_round) + ' round' + ('' if game.current_round == 1 else 's') + '* with the following word path:\n'
+    message += '    *'
+    for index in xrange(0, len(game.words[game.players[0].id])):
+        message += '[' + game.words[game.players[0].id][index] + ', ' + game.words[game.players[1].id][index] + '] -> '
+    message = message[0:-4] + '*'
     out_channel = get_id_for_channel_name('one_two_three')
     send_message(out_channel, message)
 
