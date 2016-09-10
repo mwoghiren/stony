@@ -153,9 +153,9 @@ def register_word(channel, player, word):
         send_message(channel, message)
         return
 
-    player.current_word = word
+    player.current_word = word.lower()
     existing_game.words[player.id].append(word)
-    message = 'Your word is now registered.  Please wait for ' + existing_game.get_partner(player).name + '.'
+    message = 'Your word, *\'' + player.current_word + '\'*, is now registered.  Please wait for ' + existing_game.get_partner(player).name + '.'
     send_message(channel, message)
 
     for existing_player in existing_game.players:
