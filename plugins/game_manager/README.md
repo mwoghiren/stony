@@ -4,14 +4,14 @@ This plugin handles scoring and private answer submission and revealing.
 
 #### Scoring
 
-`SCORE [score]`: Add _score_ to your score.
-`SCORES`: Show all scores.
-`CLEAR`: Clear scores.
+* `SCORE [score]`: Add _score_ to your score.
+* `SCORES`: Show all scores.
+* `CLEAR`: Clear scores.
 
 #### Inputs and Revealing
 
-`INPUT [answer]`: Set your answer to _answer_.
-`REVEAL`: Show all submitted answers.
+* `INPUT [answer]`: Set your answer to _answer_.
+* `REVEAL`: Show all submitted answers.
 
 ### To-Do
 
