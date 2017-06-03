@@ -112,6 +112,9 @@ def start_timer(start_seconds, remaining_seconds, channel):
 def start_timers(seconds, channel):
     global timers
 
+    # Announce!
+    send_message(str(start_seconds) + ' seconds starts now!', channel)
+
     # Store the starting length.
     start_seconds = seconds 
 
