@@ -4,8 +4,8 @@
 
 from __future__ import unicode_literals
 from slackclient import SlackClient
+from threading import Timer
 
-import time
 import yaml
 
 ###
@@ -18,6 +18,9 @@ slack_client = SlackClient(config['SLACK_TOKEN'])
 
 # A list of outputs; append to this list to send a message.
 outputs = []
+
+# A list of timers.
+timers = []
 
 # A map of stored inputs.
 inputs = {}
@@ -35,6 +38,7 @@ COMMAND_REVEAL = 'REVEAL'
 COMMAND_SCORE = 'SCORE'
 COMMAND_SCORES = 'SCORES'
 COMMAND_START = 'START'
+COMMAND_STOP = 'STOP'
 
 ###
 # Bot Utility Functions
@@ -90,13 +94,53 @@ def clear_scores(channel):
     message = 'Scores cleared.'
     send_message(message, channel)
 
-def start_timer(length, channel):
-    if length > 60:
-        length -= length % 60
+def timer_end(channel):
+    send_message('Time\'s up!', channel)
+    reveal_inputs(channel)
 
-    while length > 60: 
-        minutes = length / 60
-        
+def start_timer(start_seconds, remaining_seconds, channel):
+    global timers
+    message = ''
+    if remaining_seconds > 60:
+        message = str(remaining_seconds / 60) + ' minutes remaining.'
+    else:
+        message = str(remaining_seconds) + ' seconds remaining.'
+    timer = Timer(start_seconds - remaining_seconds, send_message, [message, channel])
+    timer.start()
+    timers.append(timer)
+
+def start_timers(seconds, channel):
+    global timers
+
+    # Store the starting length.
+    start_seconds = seconds 
+
+    # Drop down to a multiple of 60 seconds.
+    if seconds > 60:
+        seconds -= seconds % 60
+
+    # Set timers for every minute above 60 seconds remaining.
+    while seconds > 60:
+        minutes = seconds / 60
+        start_timer(start_seconds, seconds, channel)
+        seconds -= 60
+
+    # Set timers for one minute or less.
+    short_times = [60, 30, 15]
+    for short_time in short_times:
+        if seconds >= short_time:
+            start_timer(start_seconds, short_time, channel)
+
+    # Set the main timer.
+    timer = Timer(start_seconds, timer_end, [channel])
+    timer.start()
+    timers.append(timer)
+
+def clear_timers(channel):
+    global timers
+    for timer in timers:
+        timer.cancel()
+    send_message('Timers cleared.', channel)
 
 ###
 # Bot Main Functions
@@ -165,5 +209,10 @@ def process_message(data):
             return
 
         # Start the timer.
-        start_timer(int(send_message), channel)
+        start_timers(int(message_text), channel)
+        return
+
+    # If it's a STOP message, clear the timers.
+    if message_text == COMMAND_STOP:
+        clear_timers(channel)
         return
