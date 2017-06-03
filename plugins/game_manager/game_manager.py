@@ -5,6 +5,7 @@
 from __future__ import unicode_literals
 from slackclient import SlackClient
 
+import time
 import yaml
 
 ###
@@ -33,6 +34,7 @@ COMMAND_INPUT = 'INPUT'
 COMMAND_REVEAL = 'REVEAL'
 COMMAND_SCORE = 'SCORE'
 COMMAND_SCORES = 'SCORES'
+COMMAND_START = 'START'
 
 ###
 # Bot Utility Functions
@@ -88,6 +90,14 @@ def clear_scores(channel):
     message = 'Scores cleared.'
     send_message(message, channel)
 
+def start_timer(length, channel):
+    if length > 60:
+        length -= length % 60
+
+    while length > 60: 
+        minutes = length / 60
+        
+
 ###
 # Bot Main Functions
 ###
@@ -142,4 +152,18 @@ def process_message(data):
         # Store the pairing in the map.
         inputs[username] = message_text
         send_message('Got it!', channel)
+        return
+
+    # If it's a START message, begin the timer.
+    if message_text.startswith(COMMAND_START + ' '):
+        # Chop off the START command token.
+        message_text = message_text.split(' ', 1)[1]
+
+        # Send an error message if the timer length isn't an integer.
+        if not is_int(message_text):
+            send_message('That\'s not an integer.', channel)
+            return
+
+        # Start the timer.
+        start_timer(int(send_message), channel)
         return
