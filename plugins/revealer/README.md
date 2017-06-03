@@ -1,15 +1,19 @@
-This plugin handles private answer input and reveal functionality.
+This plugin handles scoring and private answer submission and revealing.
 
 ### How It Works
 
-Users PM stony their answers using `in [answer]`.
+#### Scoring
 
-Then, in any channel, when someone types `REVEAL`, stony will show everyone's answers.
+`SCORE [score]`: Add _score_ to your score.
+`SCORES`: Show all scores.
+`CLEAR`: Clear scores.
 
-That's about it!
+#### Inputs and Revealing
+
+`INPUT [answer]`: Set your answer to _answer_.
+`REVEAL`: Show all submitted answers.
 
 ### To-Do
 
-* Turn this into a general game-facilitation plugin.  For now, this means add scorekeeping.
 * Add timing/auto-reveal functionality.
 * Allow the specification of a game leader, who is the only person who can `REVEAL`.
