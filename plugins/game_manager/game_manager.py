@@ -143,6 +143,7 @@ def clear_timers(channel):
     global timers
     for timer in timers:
         timer.cancel()
+    timers = []
     send_message('Timers cleared.', channel)
 
 ###
