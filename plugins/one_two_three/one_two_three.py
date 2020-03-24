@@ -87,14 +87,14 @@ def get_id_for_username(username):
     if api_call.get('ok'):
         users = api_call.get('members')
         for user in users:
-            if 'name' in user and user.get('name') == username:
+            if 'profile' in user and 'display_name' in user.get('profile') and user.get('profile').get('display_name') == username:
                 return user.get('id')
     return None
 
 def get_username_for_id(user_id):
     api_call = slack_client.api_call('users.info', user=user_id)
     if api_call.get('ok'):
-        return api_call.get('user').get('name')
+        return api_call.get('user').get('profile').get('display_name')
     return None
 
 def get_id_for_channel_name(channel_name):
